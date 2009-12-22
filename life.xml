@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+	<ModulePrefs
+		title="Conway's Game of Life"
+		height="200"
+		description="Play Conway's Game of Life in Google Wave."
+		author="Charles Lehner"
+		author_email="gadgets@lehnerstudios.com">
+	 <Require feature="wave"/>
+	 <Require feature="dynamic-height"/>
+	</ModulePrefs>
+
+	<Content type="html">
+	<![CDATA[
+	
+	<style type="text/css">
+	#canvas {
+		display: block;
+		border: 1px solid black;
+	}
+	</style>
+	
+	<script type="text/javascript"
+		src="http://wave-api.appspot.com/public/wave.js"></script>
+	<script type="text/javascript"
+		src="http://www.lehnerstudios.com/wave/life/wavestuff.js"></script>
+	<script type="text/javascript"
+		src="http://www.lehnerstudios.com/wave/life/life.js"></script>
+	
+	<div id="container">
+		<canvas id="canvas"></canvas>
+		<button id="playBtn">▶</button>
+		<button id="nextBtn">&gt;</button>
+	</div>
+	
+	<script type="text/javascript">
+	var world, playBtn, nextBtn;
+
+	function next() {
+		world.iterate();
+	}
+	
+	function playOrPause() {
+		if (world.playing) {
+			world.stop();
+			playBtn.innerHTML = "&#9654;";
+		} else {
+			world.play();
+			playBtn.innerHTML = "&#9724;";
+		}
+	}
+	
+	waveStuff.addLoadCallback(function () {
+		world = new World(document.getElementById("canvas"));
+		if (gadgets.window) {
+			gadgets.window.adjustHeight();
+		}
+		playBtn = document.getElementById("playBtn");
+		playBtn.addEventListener("click", playOrPause, false);
+		nextBtn = document.getElementById("nextBtn");
+		nextBtn.addEventListener("click", next, false);
+	});
+	</script>
+	
+	]]></Content>
+</Module>
