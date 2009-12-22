@@ -29,8 +29,8 @@
 	
 	<div id="container">
 		<canvas id="canvas"></canvas>
-		<button id="playBtn">▶</button>
-		<button id="nextBtn">&gt;</button>
+		<button id="nextBtn">Next</button>
+		<button id="playBtn">Play</button>
 	</div>
 	
 	<script type="text/javascript">
@@ -43,10 +43,10 @@
 	function playOrPause() {
 		if (world.playing) {
 			world.stop();
-			playBtn.innerHTML = "&#9654;";
+			playBtn.innerHTML = "Play";
 		} else {
 			world.play();
-			playBtn.innerHTML = "&#9724;";
+			playBtn.innerHTML = "Pause";
 		}
 	}
 	
