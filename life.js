@@ -340,6 +340,9 @@ function onMouseUp(e) {
 function initGrid(w, h, s) {
 	cols = w;
 	rows = h;
+	canvas.width = cols * scale;
+	canvas.height = rows * scale;
+	gadgets.window.adjustHeight();
 	scale = s;
 	cells = Array(rows);
 	gridState = Array(rows);
@@ -351,9 +354,6 @@ function initGrid(w, h, s) {
 			gridState[y][x] = "";
 		}
 	}
-	canvas.width = cols * scale;
-	canvas.height = rows * scale;
-	gadgets.window.adjustHeight();
 }
 
 // Calculate a rule number from a S/B rule
@@ -433,10 +433,10 @@ Cell.prototype = {
 			(owner ? owner.get("id") : ""));
 	},
 
-	update: function update(state /*:string*/) {
+	update: function update(pid /*:string*/) {
 		updatedCells[this.id] = this;
 
-		if (state) {
+		if (pid) {
 			this.alive = true;
 			/*this.owner = wave.getParticipantById(state);//Participants.getByShortId(state);
 			
@@ -449,7 +449,6 @@ Cell.prototype = {
 			this.icon = participants.getObject(pid).get("img");
 			this.draw();*/
 			
-			var pid = state;
 			participants.bindOnce(pid, function getParticipant(part) {
 				this.owner = part;
 				loadParticipantImage(part);
@@ -585,9 +584,14 @@ function loadParticipantImage(part) {
 	part.bind("thumbnailUrl", function (url) {
 		var img = part._img = new Image();
 		img.src = url;
-		img.onload = function () {
+		function onload() {
 			part.set("img", img);
-		};
+		}
+		if (img.complete) {
+			onload();
+		} else {
+			img.onload = onload;
+		}
 	});
 }
 
