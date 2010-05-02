@@ -5,7 +5,9 @@
 		height="200"
 		description="Play Conway's Game of Life in Google Wave."
 		author="Charles Lehner"
-		author_email="gadgets@lehnerstudios.com">
+		author_email="gadgets@lehnerstudios.com"
+		screenshot="http://www.lehnerstudios.com/wave/life/images/screenshot-300.png"
+		thumbnail="http://www.lehnerstudios.com/wave/life/images/thumbnail-120x60.png">
 	 <Require feature="wave"/>
 	 <Require feature="dynamic-height"/>
 	</ModulePrefs>
@@ -20,46 +22,21 @@
 	}
 	</style>
 	
-	<script type="text/javascript"
-		src="http://wave-api.appspot.com/public/wave.js"></script>
-	<script type="text/javascript"
-		src="http://www.lehnerstudios.com/wave/life/wavestuff.js"></script>
-	<script type="text/javascript"
-		src="http://www.lehnerstudios.com/wave/life/life.js"></script>
-	
+	<script src="http://wave-api.appspot.com/public/wave.js"></script>
+	<script src="http://www.lehnerstudios.com/wave/sharedobject/sharedobject.js"></script>
+	<script src="http://www.lehnerstudios.com/wave/sharedobject/wavy.js"></script>
+	<script src="http://www.lehnerstudios.com/wave/life/life.js"></script>
+		
 	<div id="container">
 		<canvas id="canvas"></canvas>
-		<button id="nextBtn">Next</button>
-		<button id="playBtn">Play</button>
+		<div id="buttons">
+			<button id="nextBtn">Next</button>
+			<button id="playBtn">Play</button>
+		</div>
 	</div>
 	
 	<script type="text/javascript">
-	var world, playBtn, nextBtn;
-
-	function next() {
-		world.iterate();
-	}
-	
-	function playOrPause() {
-		if (world.playing) {
-			world.stop();
-			playBtn.innerHTML = "Play";
-		} else {
-			world.play();
-			playBtn.innerHTML = "Pause";
-		}
-	}
-	
-	waveStuff.addLoadCallback(function () {
-		world = new World(document.getElementById("canvas"));
-		if (gadgets.window) {
-			gadgets.window.adjustHeight();
-		}
-		playBtn = document.getElementById("playBtn");
-		playBtn.addEventListener("click", playOrPause, false);
-		nextBtn = document.getElementById("nextBtn");
-		nextBtn.addEventListener("click", next, false);
-	});
+	init();
 	</script>
 	
 	]]></Content>

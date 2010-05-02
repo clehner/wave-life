@@ -1,0 +1,3 @@
+[submodule "sharedobject"]
+	path = sharedobject
+	url = git://github.com/clehner/sharedobject.git
