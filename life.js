@@ -319,7 +319,7 @@ function onMouseMove(e) {
 		}
 	}
 	
-	wive.bufferFn(function bufferedLine() {
+	wavy.bufferFn(function bufferedLine() {
 		line(oldCoords.x, coords.x, oldCoords.y, coords.y, hitCell);
 	});
 	
@@ -593,7 +593,7 @@ function loadParticipantImage(part) {
 
 // start the animation
 function play() {
-	wive.bufferFn(function () {
+	wavy.bufferFn(function () {
 		stop();
 		playing = setInterval(iterate, 1000);
 		iterate();
@@ -613,9 +613,9 @@ function $(id) {
 }
 //World.prototype.ruleNumber = World.prototype.makeRuleNumber("1/1");
 
-wive.bufferStart();
+wavy.bufferStart();
 
-var commitState = wive.flushBuffer.throttled(250);
+var commitState = wavy.flushBuffer.throttled(250);
 
 function connect() {
 	window.addEventListener("blur", onMouseUp, false);
@@ -625,6 +625,11 @@ function connect() {
 	$("nextBtn").addEventListener("click", iterate, false);
 	
 	initGrid(60, 35, 8);
+
+	wavy.bind("mode", function (mode) {
+		container.className = mode + "-mode";
+		gadgets.window.adjustHeight();
+	});
 	
 	state.bind("cells", updateGrid);
 
@@ -638,11 +643,11 @@ window.init = function init() {
 	canvas = $("canvas");
 	ctx = canvas.getContext("2d");
 	
-	wive.bind("state", function (s) {
+	wavy.bind("state", function (s) {
 		state = s;
-		viewer = wive.get("viewer");
+		viewer = wavy.get("viewer");
 		
-		wive.bind("participants", function (p) {
+		wavy.bind("participants", function (p) {
 			participants = p;
 			
 			connect();

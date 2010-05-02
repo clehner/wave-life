@@ -7,7 +7,7 @@
 		author="Charles Lehner"
 		author_email="gadgets@lehnerstudios.com"
 		screenshot="http://www.lehnerstudios.com/wave/life/images/screenshot-300.png"
-		thumbnail="http://www.lehnerstudios.com/wave/life/images/thumbnail-120x60.png">
+		thumbnail="http://www.lehnerstudios.com/wave/life/images/thumbnail-51.png">
 	 <Require feature="wave"/>
 	 <Require feature="dynamic-height"/>
 	</ModulePrefs>
@@ -19,6 +19,12 @@
 	#canvas {
 		display: block;
 		border: 1px solid black;
+	}
+	#buttons {
+		display: none;
+	}
+	.edit-mode #buttons {
+		display: block;
 	}
 	</style>
 	
