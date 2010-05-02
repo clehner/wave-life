@@ -319,7 +319,7 @@ function onMouseMove(e) {
 		}
 	}
 	
-	wavy.bufferFn(function bufferedLine() {
+	wavy.buffer(function bufferedLine() {
 		line(oldCoords.x, coords.x, oldCoords.y, coords.y, hitCell);
 	});
 	
@@ -593,7 +593,7 @@ function loadParticipantImage(part) {
 
 // start the animation
 function play() {
-	wavy.bufferFn(function () {
+	wavy.buffer(function () {
 		stop();
 		playing = setInterval(iterate, 1000);
 		iterate();
@@ -613,7 +613,7 @@ function $(id) {
 }
 //World.prototype.ruleNumber = World.prototype.makeRuleNumber("1/1");
 
-wavy.bufferStart();
+wavy.startBuffer();
 
 var commitState = wavy.flushBuffer.throttled(250);
 
