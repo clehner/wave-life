@@ -101,8 +101,10 @@ Participants = (function () {
 
 /* ----- Game Of Life ----- */
 
+var container;
 var canvas;
 var ctx;
+var tooltip;
 
 var state;
 var participants;
@@ -257,34 +259,25 @@ function getCellAtCoords(x, y) {
 	return (cells[~~y] || {})[~~x];
 }
 
-// Get the (fractional) x and y coords under the cursor.
-function getCoords(e) {
-
-	// Add the offsetX and offsetY values to e
-	function fixOffset(e) {
-		var obj, oX, oY;
-		if ("offsetX" in e) {
-			return;
-		}
-		obj = e.target;
-		
-		// find the absolute position of the object
-		oX = oY = 0;
-		do {
-			oX += obj.offsetLeft;
-			oY += obj.offsetTop;
-		} while ((obj = obj.offsetParent));
-		
-		// return the relative position
-		e.offsetX = e.pageX - oX;
-		e.offsetY = e.pageY - oY;
-	}
-	
-	fixOffset(e);
-	
+function getMouseOffset(element, e) {
+	// there's probably a better way to do this...
+	var x = 0, y = 0;
+	do {
+		x += element.offsetLeft;
+		y += element.offsetTop;
+	} while (element = element.offsetParent);
 	return {
-		x: e.offsetX / scale,
-		y: e.offsetY / scale
+		x: e.pageX - x,
+		y: e.pageY - y
+	};
+}
+
+// Get the (fractional) x and y cell coords under the cursor.
+function getCoords(e) {
+	var c = getMouseOffset(canvas, e);
+	return {
+		x: c.x / scale,
+		y: c.y / scale
 	};
 }
 
@@ -334,6 +327,29 @@ function onMouseUp(e) {
 	if (!playing) {
 		commitState();
 	}
+}
+
+// Tooltip functions
+
+function hideTooltip() {
+	tooltip.className = "";
+}
+
+function showTooltip(e) {
+	// Move the tooltip to the mouse.
+	var pos = getMouseOffset(container, e);
+	var w = 270;
+	var h = 34;
+	var x = Math.max(0, Math.min(container.offsetWidth - w, pos.x - w/2));
+	var y = Math.max(0, Math.min(container.offsetHeight - h, pos.y));
+	tooltip.style.left = x + "px";
+	tooltip.style.top = y + "px";
+	tooltip.className = "visible";
+	// When there is a mousedown outside the tooltip, hide it.
+	document.addEventListener("mousedown", function onMouseDown() {
+		hideTooltip();
+		this.removeEventListener("mousedown", onMouseDown, false);
+	}, true);
 }
 
 // initialize cell grid
@@ -623,16 +639,26 @@ var commitState = wavy.flushBuffer.throttled(250);
 
 function connect() {
 	window.addEventListener("blur", onMouseUp, false);
-	canvas.addEventListener("mousedown", onMouseDown, false);
 	canvas.addEventListener("contextmenu", onMouseUp, false);
 	$("playBtn").addEventListener("click", playOrPause, false);
 	$("nextBtn").addEventListener("click", iterate, false);
 	
 	initGrid(60, 35, 8);
 
-	wavy.bind("mode", function (mode) {
+	wavy.bind("mode", function (mode, prevMode) {
 		container.className = mode + "-mode";
 		gadgets.window.adjustHeight();
+		if (mode == "edit") {
+			canvas.addEventListener("mousedown", onMouseDown, false);
+		} else if (prevMode == "edit") {
+			canvas.removeEventListener("mousedown", onMouseDown, false);
+		}
+		if (mode == "view") {
+			canvas.addEventListener("click", showTooltip, false);
+		} else if (prevMode == "view") {
+			hideTooltip();
+			canvas.removeEventListener("click", showTooltip, false);
+		}
 	});
 	
 	state.bind("cells", updateGrid);
@@ -646,6 +672,7 @@ window.init = function init() {
 	container = $("container");
 	canvas = $("canvas");
 	ctx = canvas.getContext("2d");
+	tooltip = $("tooltip");
 	
 	wavy.bind("state", function (s) {
 		state = s;

@@ -26,6 +26,20 @@
 	.edit-mode #buttons {
 		display: block;
 	}
+	#tooltip {
+		display: none;
+		position: absolute;
+		text-align: center;
+		width: 260px;
+		padding: 5px;
+		background-color: #fefdd5;
+		border: 1px solid #a4a274;
+		border-radius: 10px;
+		font: small arial, sans-serif;
+	}
+	#tooltip.visible {
+		display: block;
+	}
 	</style>
 	
 	<script src="http://wave-api.appspot.com/public/wave.js"></script>
@@ -39,9 +53,13 @@
 			<button id="nextBtn">Next</button>
 			<button id="playBtn">Play</button>
 		</div>
+		<div id="tooltip">
+			You are in view mode.<br />
+			To edit cells, place the wave in edit mode.
+		</div>
 	</div>
 	
-	<script type="text/javascript">
+	<script>
 	init();
 	</script>
 	
