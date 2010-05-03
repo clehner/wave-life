@@ -34,7 +34,7 @@
 		padding: 5px;
 		background-color: #fefdd5;
 		border: 1px solid #a4a274;
-		border-radius: 10px;
+		border-radius: 7px;
 		font: small arial, sans-serif;
 	}
 	#tooltip.visible {

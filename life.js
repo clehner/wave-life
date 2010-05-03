@@ -77,28 +77,6 @@ function line(x0, x1, y0, y1, plot) {
 	}
 }
 
-/* ----- Participants ----- */
-
-Participants = (function () {
-	var unknown = new wave.Participant("", "Unknown",
-		"https://wave.google.com/wave/static/images/unknown.jpg");
-	
-	var partsBySid = [];
-	var sidsByPid = [];
-	return {
-		getByShortId: function getByShortId(sid) {
-			if (sid in partsBySid) {
-				return partsBySid[sid];
-			}
-			sid = 0;
-			partsBySid[sid] = 0;
-		},
-		getShortId: function getShortId(part) {
-			
-		}
-	};
-})();
-
 /* ----- Game Of Life ----- */
 
 var container;
@@ -109,6 +87,7 @@ var tooltip;
 var state;
 var participants;
 var viewer;
+var participantsBySid = new SharedObject();
 
 var rows = 0; // dimensions of the grid
 var cols = 0;
@@ -120,55 +99,48 @@ var cells = []; // Array(Array(Cell))
 var updatedCells = {}; // object
 var gridState = []; // Array(Array(string))
 
-var pidsBySid = [];
-var sidsByPid = {};
-
 var playing = false; // are we iterating
 var dragAlive = true; // will dragging over a cell make it alive (or dead)
 
 // Update the cells by one generation.
 function iterate() {
-	var i, updatedCell, willLive, cell,
-		neighbors, j, pidsCompressed, gridStateString,
-		rowsNewState, rowNewState, rowOldState, rowCells;
-	
 	// Get the cells that were recently affected
 	// (had a neighbor changed since the last iteration)
 	// because they are the ones that may be updated this iteration.
 	
 	// Mark the neighbors of cells that were updated recently.
 	// These "affected" cells are the only ones that might changed in this iteration.
-	for (i in updatedCells) {
-		updatedCell = updatedCells[i];
-		neighbors = updatedCell._neighbors || updatedCell.getNeighbors();
-		for (j = neighbors.length; j--;) {
+	for (var i in updatedCells) {
+		var updatedCell = updatedCells[i];
+		var neighbors = updatedCell._neighbors || updatedCell.getNeighbors();
+		for (var j = neighbors.length; j--;) {
 			neighbors[j].affected = true;
 		}
 		updatedCell.affected = true;
 	}
 
 	// Update the affected cells and build the grid state string.
-	rowsNewState = []; // Array * string
+	var rowsNewState = []; // Array * string
 	for (var y = rows; y--;) {
-		rowOldState = gridState[y];
-		rowNewState = [];
-		rowCells = cells[y];
+		var rowOldState = gridState[y];
+		var rowNewState = [];
+		var rowCells = cells[y];
 		for (var x = cols; x--;) {
-			cell = rowCells[x];
+			var cell = rowCells[x];
 			
 			var cellState;
 			if (cell.affected) {
-				willLive = cell.willLive();
+				var willLive = cell.willLive();
 				if (willLive != cell.alive) {
 					// The cell is changing naturally (by the rules).
 					// If the cell is becoming alive, it takes the owner of the
 					// majority of its neighbors
 					cellState = willLive ? getParticipantSid(
-						cell.getInfluencingOwner()) : "";
+						cell.getInfluencingOwner()) : " ";
 						
 				} else if (cell.baseState != cell.overrideState) {
 					// The cell has been changed by the user
-					cellState = cell.alive ? getParticipantSid(cell.owner) : "";
+					cellState = cell.alive ? getParticipantSid(cell.owner) : " ";
 				
 				} else {
 					// default to old state if not updated
@@ -182,8 +154,10 @@ function iterate() {
 			}
 			rowNewState[x] = cellState;
 		}
-		rowsNewState[y] = rowNewState.join(",");
+		rowsNewState[y] = rowNewState.join("");
 	}
+	
+	wavy.flushBuffer();
 	
 	// Assimilate the updated cells so they don't override the world any more.
 	for (i in updatedCells) {
@@ -195,27 +169,54 @@ function iterate() {
 	
 	updatedCells = {};
 	
-	// Compress the grid state by encoding participant ids as short ids.
-	pidsCompressed = pidsBySid.join(",");
-	
-	// Combine cell states with pids
-	rowsNewState.unshift(pidsCompressed);
-	gridStateString = rowsNewState.join("\n");
-	
-	state.set("cells", gridStateString);
-	commitState();
+	state.set({
+		"cells": undefined, // this is for the older version of the state.
+		"cells2": rowsNewState.join("\n")
+	});
+	wavy.flushBuffer();
 }
 
 function updateGrid(gridStateString) {
 	var newSidGrid, newSidRows, i, x, y,
-		cellsRow, oldSidsRow, newSidsRow, sid, oldSid, pid;
+		cellsRow, oldSidsRow, newSidsRow, sid, oldSid;
 	
 	// Decode the grid state
 	newSidGrid = [];
 	newSidRows = gridStateString.split("\n");
 	
+	// Update the cells
+	for (y = cells.length; y--;) {
+		cellsRow = cells[y];
+		oldSidsRow = gridState[y];
+		newSidsRow = newSidGrid[y] = newSidRows[y] || "";
+		
+		for (x = cellsRow.length; x--;) {
+			sid = newSidsRow[x];
+			oldSid = oldSidsRow[x];
+			if (sid !== oldSid) {
+				if (sid == " ") {
+					sid = null;
+				}
+				cellsRow[x].receiveBaseState(sid);
+			}
+		}
+	}
+	
+	gridState = newSidGrid;
+}
+
+// process an older encoding of grid state
+function updateGridOld(gridStateString) {
+	var newSidGrid, newSidRows, i, x, y,
+		cellsRow, oldSidsRow, newSidsRow, sid, oldSid, pid;
+	
+	// Decode the grid state
+	newSidGrid = [];
+	newSidRows = (gridStateString || "").split("\n");
+	
 	// Decode participant ids from the first line
-	pidsBySid = newSidRows.shift().split(",");
+	var pidsBySid = newSidRows.shift().split(",");
+	var sidsByPid = {};
 	for (i = pidsBySid.length; i--;) {
 		sidsByPid[pidsBySid[i]] = "" + i;
 	}
@@ -240,19 +241,36 @@ function updateGrid(gridStateString) {
 	gridState = newSidGrid;
 }
 
+
+// Participant sid encoding
+
+participantsBySid.set({"\0":1, " ":1});
+
 // get a short (compressed) id for a participant
 function getParticipantSid(participant) {
 	if (!participant) {
-		return "";
+		return null;
 	}
-	var pid = participant.get("id");
-	if (pid in sidsByPid) {
-		return sidsByPid[pid];
+	var sid = participant.get("sid");
+	if (sid == null) {
+		do {
+			sid = String.fromCharCode(Math.random() * 65536);
+		} while (participantsBySid.get(sid));
+		participant.set("sid", sid);
+		participantsBySid.set(sid, participant);
+		state.set(sid, participant.get("id"));
 	}
-	var sid = "" + pidsBySid.length;
-	pidsBySid[sid] = pid;
-	sidsByPid[pid] = sid;
 	return sid;
+}
+
+function updateParticipantSid(participant, sid, prevParticipant) {
+	if (prevParticipant) {
+		prevParticipant.set("sid", null);
+	}
+	if (participant) {
+		participant.set("sid", sid);
+	}
+	participantsBySid.set(sid, participant)
 }
 
 function getCellAtCoords(x, y) {
@@ -329,29 +347,6 @@ function onMouseUp(e) {
 	}
 }
 
-// Tooltip functions
-
-function hideTooltip() {
-	tooltip.className = "";
-}
-
-function showTooltip(e) {
-	// Move the tooltip to the mouse.
-	var pos = getMouseOffset(container, e);
-	var w = 270;
-	var h = 34;
-	var x = Math.max(0, Math.min(container.offsetWidth - w, pos.x - w/2));
-	var y = Math.max(0, Math.min(container.offsetHeight - h, pos.y));
-	tooltip.style.left = x + "px";
-	tooltip.style.top = y + "px";
-	tooltip.className = "visible";
-	// When there is a mousedown outside the tooltip, hide it.
-	document.addEventListener("mousedown", function onMouseDown() {
-		hideTooltip();
-		this.removeEventListener("mousedown", onMouseDown, false);
-	}, true);
-}
-
 // initialize cell grid
 function initGrid(w, h, s) {
 	cols = w;
@@ -367,7 +362,7 @@ function initGrid(w, h, s) {
 		gridState[y] = [];
 		for (var x = cols; x--;) {
 			cells[y][x] = new Cell(x, y);
-			gridState[y][x] = "";
+			gridState[y][x] = " ";
 		}
 	}
 }
@@ -391,6 +386,29 @@ function makeRuleNumber(s, b) {
 	return x;
 }
 
+/* ----- Tooltip ----- */
+
+function hideTooltip() {
+	tooltip.className = "";
+}
+
+function showTooltip(e) {
+	// Move the tooltip to the mouse.
+	var pos = getMouseOffset(container, e);
+	var w = 270;
+	var h = 34;
+	var x = Math.max(0, Math.min(container.offsetWidth - w, pos.x - w/2));
+	var y = Math.max(0, Math.min(container.offsetHeight - h, pos.y));
+	tooltip.style.left = x + "px";
+	tooltip.style.top = y + "px";
+	tooltip.className = "visible";
+	// When there is a mousedown outside the tooltip, hide it.
+	document.addEventListener("mousedown", function onMouseDown() {
+		hideTooltip();
+		this.removeEventListener("mousedown", onMouseDown, true);
+	}, true);
+}
+
 /* ----- Cell ----- */
 
 function Cell(x, y) {
@@ -401,7 +419,7 @@ function Cell(x, y) {
 	cellsById[this.id] = this;
 	this.x = ~~x;
 	this.y = ~~y;
-	state.bind(this.id, this.receiveState, this);
+	//state.bind(this.id, this.receiveState, this);
 }
 Cell.prototype = {
 	constructor: Cell,
@@ -414,8 +432,8 @@ Cell.prototype = {
 	overrideState: null,
 	
 	// Update the state for this particular cell.
-	// It overrides the state given in the "cells" key.
-	receiveState: function receiveState(value /*:string|null*/) {
+	// It overrides the state given in the "cells2" key.
+	receiveState: function receiveState(value /*:sid*/) {
 		if (this.overrideState != value) {
 			this.update(value == null ? this.baseState : value);
 		}
@@ -427,9 +445,9 @@ Cell.prototype = {
 		}
 	},
 	
-	// Update the state for this cell, from the "cells" key
+	// Update the state for this cell, from the "cells2" key
 	// It can be overridden by an individual state value for this cell.
-	receiveBaseState: function receiveBaseState(value /*:string*/) {
+	receiveBaseState: function receiveBaseState(value /*:sid*/) {
 		if (this.overrideState == null) {
 			if (value != this.baseState) {
 				this.update(value);
@@ -444,41 +462,39 @@ Cell.prototype = {
 	
 	// Set this cell's life or owner.
 	setValue: function setValue(owner) {
-		state.set(this.id, //Participants.getShortId(owner));
-			(owner == null) ? null :
-			(owner ? owner.get("id") : ""));
+		state.set(this.id, 
+			owner ? getParticipantSid(owner) :
+			owner == null ? null : "");
 	},
 
-	update: function update(pid /*:string*/) {
+	update: function update(sid /*:string*/) {
 		updatedCells[this.id] = this;
-
-		if (pid) {
+		if (sid) {
 			this.alive = true;
-			/*this.owner = wave.getParticipantById(state);//Participants.getByShortId(state);
-			
-			var pid = state;
-			var owner = participants.get(pid);
-			if (owner) {
-				this.icon = owner.get("img");*/
-			
-			/*var d = {get: function () { return this; }};
-			this.icon = participants.getObject(pid).get("img");
-			this.draw();*/
-			
-			participants.bindOnce(pid, function getParticipant(part) {
-				this.owner = part;
-				loadParticipantImage(part);
-				part.bindOnce("img", function getParticipantImg(icon) {
-					this.icon = icon;
-					this.draw();
-				}, this);
-			}, this);
-			
+			if (sid.length > 1) {
+				// In the old version, the pid was stored for each cell.
+				var pid = sid;
+				participants.bindOnce(pid, this.setOwner, this);
+			} else {
+				// In the new version, a sid is stored.
+				participantsBySid.bindOnce(sid, this.setOwner, this);
+			}
 		} else {
 			this.alive = false;
 			this.owner = null;
 			this.draw();
 		}
+	},
+	
+	setOwner: function setOwner(part) {
+		this.owner = part;
+		loadParticipantImage(part);
+		part.bindOnce("img", this.setIcon, this);
+	},
+	
+	setIcon: function setIcon(icon) {
+		this.icon = icon;
+		this.draw();
 	},
 
 	draw: function draw() {
@@ -637,31 +653,46 @@ wavy.startBuffer();
 
 var commitState = wavy.flushBuffer.throttled(250);
 
+function onModeChange(mode, prevMode) {
+	container.className = mode + "-mode";
+	gadgets.window.adjustHeight();
+	if (mode == "edit") {
+		canvas.addEventListener("mousedown", onMouseDown, false);
+	} else if (prevMode == "edit") {
+		canvas.removeEventListener("mousedown", onMouseDown, false);
+	}
+	if (mode == "view") {
+		canvas.addEventListener("click", showTooltip, false);
+	} else if (prevMode == "view") {
+		hideTooltip();
+		canvas.removeEventListener("click", showTooltip, false);
+	}
+}
+
 function connect() {
 	window.addEventListener("blur", onMouseUp, false);
 	canvas.addEventListener("contextmenu", onMouseUp, false);
 	$("playBtn").addEventListener("click", playOrPause, false);
 	$("nextBtn").addEventListener("click", iterate, false);
 	
-	initGrid(60, 35, 8);
-
-	wavy.bind("mode", function (mode, prevMode) {
-		container.className = mode + "-mode";
-		gadgets.window.adjustHeight();
-		if (mode == "edit") {
-			canvas.addEventListener("mousedown", onMouseDown, false);
-		} else if (prevMode == "edit") {
-			canvas.removeEventListener("mousedown", onMouseDown, false);
-		}
-		if (mode == "view") {
-			canvas.addEventListener("click", showTooltip, false);
-		} else if (prevMode == "view") {
-			hideTooltip();
-			canvas.removeEventListener("click", showTooltip, false);
+	wavy.bind("mode", onModeChange);
+	
+	// bind participant sids to state
+	state.bind(function onKeyUpdate(key, value, prevValue) {
+		if (key.length == 1) {
+			participants.bindOnce(value, function (part) {
+				updateParticipantSid(part, key, prevValue);
+			});
+		} else {
+			var cell = cellsById[key];
+			if (cell) {
+				cell.receiveState(value);
+			}
 		}
 	});
 	
-	state.bind("cells", updateGrid);
+	state.bind("cells2", updateGrid);
+	state.bind("cells", updateGridOld);
 
 	state.bind("rule", function ruleChanged(value, prevValue) {
 		ruleNumber = makeRuleNumber(value);
@@ -674,13 +705,14 @@ window.init = function init() {
 	ctx = canvas.getContext("2d");
 	tooltip = $("tooltip");
 	
-	wavy.bind("state", function (s) {
-		state = s;
+	initGrid(60, 35, 8);
+
+	wavy.bind("participants", function (p) {
+		participants = p;
 		viewer = wavy.get("viewer");
 		
-		wavy.bind("participants", function (p) {
-			participants = p;
-			
+		wavy.bind("state", function (s) {
+			state = s;
 			connect();
 		});
 	});
