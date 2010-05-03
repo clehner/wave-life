@@ -170,7 +170,7 @@ function iterate() {
 	updatedCells = {};
 	
 	state.set({
-		"cells": undefined, // this is for the older version of the state.
+		"cells": null, // this is for the older version of the state.
 		"cells2": rowsNewState.join("\n")
 	});
 	wavy.flushBuffer();
@@ -574,7 +574,7 @@ Cell.prototype = {
 			}
 		}
 		var max = 0;
-		var owner = viewer;
+		var owner;
 		var ownerId;
 		for (i in owners) {
 			if (owners[i] > max) {
