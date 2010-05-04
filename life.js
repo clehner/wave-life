@@ -182,7 +182,7 @@ function updateGrid(gridStateString) {
 	
 	// Decode the grid state
 	newSidGrid = [];
-	newSidRows = gridStateString.split("\n");
+	newSidRows = (gridStateString || "").split("\n");
 	
 	// Update the cells
 	for (y = cells.length; y--;) {
