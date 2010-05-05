@@ -472,7 +472,7 @@ Cell.prototype = {
 		if (sid) {
 			this.alive = true;
 			if (sid.length > 1) {
-				// In the old version, the pid was stored for each cell.
+				// In the old version, a pid was stored for each cell.
 				var pid = sid;
 				participants.bindOnce(pid, this.setOwner, this);
 			} else {
@@ -481,15 +481,21 @@ Cell.prototype = {
 			}
 		} else {
 			this.alive = false;
-			this.owner = null;
-			this.draw();
+			this.setOwner(null);
 		}
 	},
 	
 	setOwner: function setOwner(part) {
+		if (this.owner && this.owner != part) {
+			this.owner.unbind("img", this.setIcon, this);
+		}
 		this.owner = part;
-		loadParticipantImage(part);
-		part.bindOnce("img", this.setIcon, this);
+		if (part) {
+			loadParticipantImage(part);
+			part.bindOnce("img", this.setIcon, this);
+		} else {
+			this.setIcon(null);
+		}
 	},
 	
 	setIcon: function setIcon(icon) {
@@ -707,15 +713,26 @@ window.init = function init() {
 	
 	initGrid(60, 35, 8);
 
-	wavy.bind("participants", function (p) {
+	wavy.bindOnce("participants", function (p) {
 		participants = p;
-		viewer = wavy.get("viewer");
 		
-		wavy.bind("state", function (s) {
+		wavy.bindOnce("state", function (s) {
 			state = s;
-			connect();
+	
+			wavy.bindOnce("viewer", function (v) {
+				viewer = v;
+				
+				connect();
+			});
 		});
 	});
+
+	/*wavy.bind(["participants", "state", "viewer"], function (p, s, v) {
+		participants = p;
+		state = s;
+		viewer = v;
+		connect();
+	});*/
 	
 	//state.bind("width", function 
 	
