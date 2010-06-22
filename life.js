@@ -241,6 +241,15 @@ function updateGridOld(gridStateString) {
 	gridState = newSidGrid;
 }
 
+// maybe: debounce or throttle this
+function drawAllCells() {
+	for (var y = rows; y--;) {
+		for (var x = cols; x--;) {
+			cells[y][x].updateIcon();
+		}
+	}
+}
+
 
 // Participant sid encoding
 
@@ -253,11 +262,12 @@ function getParticipantSid(participant) {
 	}
 	var sid = participant.get("sid");
 	if (sid == null) {
+		// generate an new, unused sid
 		do {
 			sid = String.fromCharCode(Math.random() * 65536);
 		} while (participantsBySid.get(sid));
-		participant.set("sid", sid);
-		participantsBySid.set(sid, participant);
+		//participant.set("sid", sid);
+		//participantsBySid.set(sid, participant);
 		state.set(sid, participant.get("id"));
 	}
 	return sid;
@@ -472,7 +482,7 @@ Cell.prototype = {
 		if (sid) {
 			this.alive = true;
 			if (sid.length > 1) {
-				// In the old version, a pid was stored for each cell.
+				// In the old version, the pid was stored for each cell.
 				var pid = sid;
 				participants.bindOnce(pid, this.setOwner, this);
 			} else {
@@ -481,25 +491,20 @@ Cell.prototype = {
 			}
 		} else {
 			this.alive = false;
-			this.setOwner(null);
+			this.owner = null;
+			this.draw();
 		}
 	},
 	
 	setOwner: function setOwner(part) {
-		if (this.owner && this.owner != part) {
-			this.owner.unbind("img", this.setIcon, this);
-		}
 		this.owner = part;
-		if (part) {
-			loadParticipantImage(part);
-			part.bindOnce("img", this.setIcon, this);
-		} else {
-			this.setIcon(null);
-		}
+		loadParticipantImage(part);
+		//part.bindOnce("img", this.setIcon, this);
+		this.updateIcon();
 	},
 	
-	setIcon: function setIcon(icon) {
-		this.icon = icon;
+	updateIcon: function updateIcon(icon) {
+		this.icon = this.owner && this.owner.get("img");
 		this.draw();
 	},
 
@@ -624,6 +629,8 @@ function loadParticipantImage(part) {
 		img.src = url;
 		function onload() {
 			part.set("img", img);
+			// redraw cells when any participant thumbnail image changes.
+			drawAllCells();
 		}
 		if (img.complete) {
 			onload();
@@ -662,6 +669,7 @@ var commitState = wavy.flushBuffer.throttled(250);
 function onModeChange(mode, prevMode) {
 	container.className = mode + "-mode";
 	gadgets.window.adjustHeight();
+	
 	if (mode == "edit") {
 		canvas.addEventListener("mousedown", onMouseDown, false);
 	} else if (prevMode == "edit") {
@@ -686,10 +694,13 @@ function connect() {
 	// bind participant sids to state
 	state.bind(function onKeyUpdate(key, value, prevValue) {
 		if (key.length == 1) {
+			// it's a sid
 			participants.bindOnce(value, function (part) {
 				updateParticipantSid(part, key, prevValue);
 			});
+		} else if (key == "cells" || key == "cells2") {
 		} else {
+			// it's a cell state
 			var cell = cellsById[key];
 			if (cell) {
 				cell.receiveState(value);
