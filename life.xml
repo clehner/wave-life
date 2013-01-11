@@ -2,12 +2,12 @@
 <Module>
 	<ModulePrefs
 		title="Conway's Game of Life"
-		height="200"
-		description="Play Conway's Game of Life in Google Wave."
+		height="304"
+		description="Play Conway's Game of Life collaboratively"
 		author="Charles Lehner"
 		author_email="gadgets@lehnerstudios.com"
-		screenshot="http://www.lehnerstudios.com/wave/life/images/screenshot-300.png"
-		thumbnail="http://www.lehnerstudios.com/wave/life/images/thumbnail-51.png">
+		screenshot="//celehner.com/gadgets/life/images/screenshot-300.png"
+		thumbnail="//celehner.com/gadgets/life/images/thumbnail-51.png">
 	 <Require feature="wave"/>
 	 <Require feature="dynamic-height"/>
 	</ModulePrefs>
@@ -42,9 +42,9 @@
 	}
 	</style>
 	
-	<script src="http://www.lehnerstudios.com/wave/sharedobject/sharedobject.js"></script>
-	<script src="http://www.lehnerstudios.com/wave/sharedobject/wavy.js"></script>
-	<script src="http://www.lehnerstudios.com/wave/life/life.js"></script>
+	<script src="//celehner.com/gadgets/sharedobject/sharedobject.js"></script>
+	<script src="//celehner.com/gadgets/sharedobject/wavy.js"></script>
+	<script src="//celehner.com/gadgets/life/life.js"></script>
 		
 	<div id="container">
 		<canvas id="canvas"></canvas>
