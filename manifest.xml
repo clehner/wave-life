@@ -1,10 +1,10 @@
 <extension 
     name="Conway's Game of Life"
     description="Explore cellular automata collaboratively."
-    thumbnailUrl="http://www.lehnerstudios.com/wave/life/images/thumbnail-120.png">
+    thumbnailUrl="http://celehner.com/gadgets/life/images/thumbnail-120.png">
   <author name="Charles Lehner"/>
   <menuHook location="toolbar" text="Insert a Conway's Game of Life gadget." 
-      iconUrl="http://www.lehnerstudios.com/wave/life/images/icon.png">
-    <insertGadget url="http://www.lehnerstudios.com/wave/life/life.xml"/>
+      iconUrl="http://celehner.com/gadgets/life/images/icon.png">
+    <insertGadget url="http://celehner.com/gadgets/life/life.xml"/>
   </menuHook>
 </extension>
